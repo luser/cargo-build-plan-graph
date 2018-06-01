@@ -1,4 +1,4 @@
-/*global google,fetch*/
+/*global google,fetch,URL*/
 google.charts.load('current', {'packages':['gantt']});
 const chartsLoaded = new Promise(resolve => google.charts.setOnLoadCallback(resolve));
 const domLoaded = new Promise(resolve => {
@@ -67,7 +67,19 @@ function parseData(data) {
   return output;
 }
 
+domLoaded.then(() => {
+  const picker = document.getElementById('picker');
+  picker.addEventListener('change', () => {
+    console.log('Got new file %s', picker.files[0].name);
+    const url = URL.createObjectURL(picker.files[0]);
+    loadUrlJSON(url).then((data) => {
+      URL.revokeObjectURL(url);
+      drawChart(parseData(data));
+    }).catch(console.error);
+  });
+});
+
 Promise.all([chartsLoaded, domLoaded, loadUrlJSON('data.json')]).then(([c,d,data]) => {
   drawChart(parseData(data));
-});
+}).catch(console.error);
 

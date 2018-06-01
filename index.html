@@ -12,6 +12,9 @@
     <script type="text/javascript" src="graph.js"></script>
   </head>
   <body>
-     <div id="chart_div"></div>
+    <label for="picker">Select a cargo build plan file:</label>
+    <input type="file" id="picker" accept=".json">
+    <p>Generate a build plan using <code>cargo +nightly build -Z unstable-options --build-plan</code>
+    <div id="chart_div"></div>
   </body>
 </html>
