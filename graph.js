@@ -36,9 +36,18 @@ function drawChart(build_data) {
 
 
 function makeDataRow(start, round, i, item) {
-  const s = start + round * 1000;
+  let this_start, this_end;
+  if ('start' in item && 'end' in item) {
+    this_start = start + item.start;
+    this_end = start + item.end;
+  } else {
+    const s = start + round * 1000;
+    this_start = s;
+    this_end = s + 1000;
+  }
   const name = `${item.package_name} ${item.package_version} ${item.target_kind[0]} ${item.kind}`;
-  return [i.toString(), name, new Date(s), new Date(s + 1000), null, 100, item.deps.join(',')];
+  return [i.toString(), name, new Date(this_start), new Date(this_end), null, 100,
+          item.deps.join(',')];
 }
 
 function parseData(data) {
