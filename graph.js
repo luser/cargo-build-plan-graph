@@ -1,4 +1,4 @@
-/*global google,fetch,URL*/
+/*global google,fetch,URL,URLSearchParams*/
 google.charts.load('current', {'packages':['gantt']});
 const chartsLoaded = new Promise(resolve => google.charts.setOnLoadCallback(resolve));
 const domLoaded = new Promise(resolve => {
@@ -10,6 +10,7 @@ const domLoaded = new Promise(resolve => {
 });
 
 function loadUrlJSON(url) {
+  console.log('Loading %s...', url);
   return fetch(url).then(res => res.json());
 }
 
@@ -88,7 +89,44 @@ domLoaded.then(() => {
   });
 });
 
-Promise.all([chartsLoaded, domLoaded, loadUrlJSON('data.json')]).then(([c,d,data]) => {
+
+function fetchRawGist(url) {
+  // This sucks but browsers don't reliably follow redirects for CORS requests.
+  const u = new URL(url);
+  u.host = 'gist.githubusercontent.com';
+  return loadUrlJSON(u.href);
+}
+
+
+function maybeFetchGist(url) {
+  const u = new URL(url);
+  // Not a gist.
+  if (u.host != 'gist.github.com') {
+    return loadUrlJSON(url);
+  }
+  // Already a /raw/ URL.
+  if (u.pathname.match(/raw/)) {
+    return fetchRawGist(url);
+  }
+  const id = u.pathname.split('/').pop();
+  console.log('Loading gist %s...', id);
+  return loadUrlJSON(`https://api.github.com/gists/${id}`).then(res => {
+    const { raw_url } = Object.values(res.files)[0];
+    return fetchRawGist(raw_url);
+  });
+}
+
+function fetchDefaultData() {
+  var searchParams = new URLSearchParams(window.location.search);
+  if (searchParams.has('url')) {
+    // Try to handle gist URLs by fetching the first raw file.
+    return maybeFetchGist(searchParams.get('url'));
+  }
+  console.log('Loading default data...');
+  return loadUrlJSON('data.json');
+}
+
+Promise.all([chartsLoaded, domLoaded, fetchDefaultData()]).then(([c,d,data]) => {
   drawChart(parseData(data));
 }).catch(console.error);
 
